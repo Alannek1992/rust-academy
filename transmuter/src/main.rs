@@ -26,17 +26,17 @@ fn parse_args(args: &[String]) -> Result<TransmutationKind> {
     if args.len() < 2 {
         return Err(Error::new(format!(
             "You have to provide transmutation kind as CLI argument.\nFollowing are supported: {}",
-            stringify_possible_transmutation()
+            stringify_possible_transmutations()
         )));
     }
     TransmutationKind::from_str(&args[1]).ok_or(Error::new(format!(
         "The unsupported transmutation provided: {}.\nFollowing are supported: {}",
         String::from(&args[1]),
-        stringify_possible_transmutation()
+        stringify_possible_transmutations()
     )))
 }
 
-fn stringify_possible_transmutation() -> String {
+fn stringify_possible_transmutations() -> String {
     let transmutations = TransmutationKind::all_variants()
         .iter()
         .map(|v| v.to_string())
