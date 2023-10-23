@@ -1,4 +1,8 @@
-use std::{env, io, process};
+use std::{
+    env,
+    io::{self, Read},
+    process,
+};
 
 use error::{Error, Result};
 use transmute::{transmute, TransmutationKind};
@@ -15,7 +19,7 @@ fn main() {
         println!("Please enter your text.");
         let mut input = String::new();
         io::stdin()
-            .read_line(&mut input)
+            .read_to_string(&mut input)
             .expect("Unable to read from stdin");
         input
     };
@@ -23,7 +27,7 @@ fn main() {
         eprintln!("{err}");
         process::exit(1);
     });
-    println!("{output}");
+    println!("\n{output}");
 }
 
 fn parse_args(args: &[String]) -> Result<TransmutationKind> {
