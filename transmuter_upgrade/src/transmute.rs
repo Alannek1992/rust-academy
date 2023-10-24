@@ -6,11 +6,11 @@ mod csv;
 macro_rules! transmutation_enum {
     ($($variant:ident => $str:expr),*) => {
 
-        pub enum TransmutationKind {
+        pub enum Transmutation {
             $($variant,)*
         }
 
-        impl TransmutationKind {
+        impl Transmutation {
 
             pub fn from_str(text: &str) -> Option<Self> {
                 match text {
@@ -21,7 +21,7 @@ macro_rules! transmutation_enum {
 
             pub fn all_variants() -> Vec<Self> {
                 let mut variants = Vec::new();
-                $(variants.push(TransmutationKind::$variant);)*
+                $(variants.push(Self::$variant);)*
                 variants
             }
 
@@ -31,32 +31,22 @@ macro_rules! transmutation_enum {
                 }
                 .to_string()
             }
+
+            pub fn transmute(&self, input: &str) -> Result<String> {
+                let result = match self {
+                    Self::Lowercase => input.to_lowercase(),
+                    Self::Uppercase => input.to_uppercase(),
+                    Self::NoSpaces => input.replace(" ", ""),
+                    Self::Slugify => slug::slugify(input),
+                    Self::Camelcase => to_camel_case(input),
+                    Self::ReverseTalk => reverse_talk(input),
+                    Self::Csv => Csv::from_str(input)?.to_string(),
+                };
+
+                Ok(result)
+            }
         }
     };
-}
-
-transmutation_enum!(
-    Lowercase => "lowercase",
-    Uppercase => "uppercase",
-    NoSpaces => "no-spaces",
-    Slugify => "slugify",
-    Camelcase => "camelcase",
-    ReverseTalk => "reverse-talk",
-    Csv => "csv"
-);
-
-pub fn transmute(input_text: &str, kind: TransmutationKind) -> Result<String> {
-    let result = match kind {
-        TransmutationKind::Lowercase => input_text.to_lowercase(),
-        TransmutationKind::Uppercase => input_text.to_uppercase(),
-        TransmutationKind::NoSpaces => input_text.replace(" ", ""),
-        TransmutationKind::Slugify => slug::slugify(input_text),
-        TransmutationKind::Camelcase => to_camel_case(input_text),
-        TransmutationKind::ReverseTalk => reverse_talk(input_text),
-        TransmutationKind::Csv => Csv::from_str(input_text)?.to_table_layout(),
-    };
-
-    Ok(result)
 }
 
 fn to_camel_case(input: &str) -> String {
@@ -87,66 +77,65 @@ fn reverse_talk(input: &str) -> String {
         .join(" ")
 }
 
+transmutation_enum!(
+    Lowercase => "lowercase",
+    Uppercase => "uppercase",
+    NoSpaces => "no-spaces",
+    Slugify => "slugify",
+    Camelcase => "camelcase",
+    ReverseTalk => "reverse-talk",
+    Csv => "csv"
+);
+
 #[cfg(test)]
 mod tests {
-    use super::{transmute, TransmutationKind};
+    use super::Transmutation;
 
     #[test]
     fn lowercase_transmutation() {
-        let result = transmute(
-            "Rust: Where 'match' is a date night for enums!",
-            TransmutationKind::Lowercase,
-        )
-        .unwrap();
+        let result = Transmutation::Lowercase
+            .transmute("Rust: Where 'match' is a date night for enums!")
+            .unwrap();
         assert_eq!(result, "rust: where 'match' is a date night for enums!");
     }
 
     #[test]
     fn uppercase_transmutation() {
-        let result = transmute(
-            "Rust: Where lifetimes outlast relationships!",
-            TransmutationKind::Uppercase,
-        )
-        .unwrap();
+        let result = Transmutation::Uppercase
+            .transmute("Rust: Where lifetimes outlast relationships!")
+            .unwrap();
         assert_eq!(result, "RUST: WHERE LIFETIMES OUTLAST RELATIONSHIPS!");
     }
 
     #[test]
     fn no_space_transmutation() {
-        let result = transmute(
-            "Rust: Making pointers point less stressfully!",
-            TransmutationKind::NoSpaces,
-        )
-        .unwrap();
+        let result = Transmutation::NoSpaces
+            .transmute("Rust: Making pointers point less stressfully!")
+            .unwrap();
         assert_eq!(result, "Rust:Makingpointerspointlessstressfully!");
     }
 
     #[test]
     fn slugify_transmutation() {
-        let result = transmute(
-            "Rust: Where code 'borrows' but never forgets!",
-            TransmutationKind::Slugify,
-        )
-        .unwrap();
+        let result = Transmutation::Slugify
+            .transmute("Rust: Where code 'borrows' but never forgets!")
+            .unwrap();
         assert_eq!(result, "rust-where-code-borrows-but-never-forgets");
     }
 
     #[test]
     fn camelcase_transmutation() {
-        let result = transmute(
+        let result = Transmutation::Camelcase.transmute(
             "Why did the Rustacean start a band? Because they knew how to play the 'Result' harmoniously, with no 'panic' in the performance!",
-            TransmutationKind::Camelcase,
         ).unwrap();
         assert_eq!(result, "WhyDidTheRustaceanStartABandBecauseTheyKnewHowToPlayTheResultHarmoniouslyWithNoPanicInThePerformance");
     }
 
     #[test]
     fn reverse_talk_transmutation() {
-        let result = transmute(
-            "Rust: Where 'match' is the only game that never ends!",
-            TransmutationKind::ReverseTalk,
-        )
-        .unwrap();
+        let result = Transmutation::ReverseTalk
+            .transmute("Rust: Where 'match' is the only game that never ends!")
+            .unwrap();
         assert_eq!(
             result,
             ":tsuR erehW 'hctam' si eht ylno emag taht reven !sdne"

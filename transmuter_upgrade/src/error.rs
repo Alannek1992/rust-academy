@@ -1,20 +1,27 @@
-use std::fmt::{Display, Formatter};
+use std::{
+    error::Error,
+    fmt::{Display, Formatter}
+};
 
-pub type Result<T> = core::result::Result<T, Error>;
+pub type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
 #[derive(Debug)]
-pub struct Error {
+pub struct CustomError {
     message: String,
 }
 
-impl Error {
-    pub fn new(message: &str) -> Self {
-        Self { message: message.to_string() }
+impl CustomError {
+    pub fn new(message: &str) -> Box<Self> {
+        Box::new(Self {
+            message: message.to_string(),
+        })
     }
 }
 
-impl Display for Error {
+impl Display for CustomError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Error: {}", self.message)
+        write!(f, "{}", self.message)
     }
 }
+
+impl Error for CustomError {}
