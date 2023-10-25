@@ -87,4 +87,13 @@ mod tests {
             assert_eq!(row.cells.join(","), line.to_string());
         });
     }
+
+    #[test]
+    fn parsing_invalid_content() {
+        let input = "Name,Age,Location,Occupation
+        John,30,New York,Engineer,Not Matching";
+
+        let csv = Csv::from_str(input);
+        assert_eq!(csv.is_err(), true);
+    }
 }
