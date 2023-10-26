@@ -1,7 +1,7 @@
 use std::fmt::{Display, Formatter};
 
 use csv::{Error, ReaderBuilder, StringRecord};
-use prettytable::{Cell, Row as PrettyRow, Table};
+use prettytable::{format, Cell, Row as PrettyRow, Table};
 
 use crate::error::Result;
 
@@ -48,6 +48,15 @@ impl Display for Csv {
                 r.cells.iter().map(|c| Cell::new(c.trim())).collect(),
             ));
         });
+
+        // some fun
+        table.add_row(PrettyRow::new(
+            self.header
+                .cells
+                .iter()
+                .map(|_| Cell::new_align("🦀", format::Alignment::CENTER))
+                .collect(),
+        ));
 
         write!(f, "{}", table)
     }
