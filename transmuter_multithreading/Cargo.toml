@@ -1,0 +1,12 @@
+[package]
+name = "transmuter_multithreading"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+colored = "2.0.4"
+slug = "0.1.4"
+prettytable-rs = "0.10.0"
+csv = "1.3.0"
