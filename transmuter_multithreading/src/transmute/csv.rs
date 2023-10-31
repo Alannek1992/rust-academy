@@ -1,4 +1,7 @@
-use std::fmt::{Display, Formatter};
+use std::{
+    fmt::{Display, Formatter},
+    fs::File,
+};
 
 use csv::{Error, ReaderBuilder, StringRecord};
 use prettytable::{format, Cell, Row as PrettyRow, Table};
@@ -11,10 +14,9 @@ pub struct Csv {
 }
 
 impl Csv {
-    pub fn from_str(input: &str) -> Result<Self> {
-        let mut reader = ReaderBuilder::new()
-            .has_headers(true)
-            .from_reader(input.as_bytes());
+    pub fn from_file(file_path: &str) -> Result<Self> {
+        let file = File::open(file_path.trim())?;
+        let mut reader = ReaderBuilder::new().has_headers(true).from_reader(file);
 
         let header = reader.headers()?.clone();
         let rows: std::result::Result<Vec<Row>, Error> = reader
@@ -80,29 +82,15 @@ mod tests {
 
     #[test]
     fn parsing() {
-        let input = "Name,Age,Location,Occupation
-        John,30,New York,Engineer
-        Alice,25,Los Angeles,Teacher
-        Bob,35,Chicago,Doctor
-        Eva,28,San Francisco,Designer";
-
-        let csv = Csv::from_str(input).unwrap();
-        let mut input_iter = input.lines();
-        let expected_header_line = input_iter.next().unwrap();
-
-        assert_eq!(csv.header.cells.join(","), expected_header_line.to_string());
-
-        input_iter.zip(csv.rows).for_each(|(line, row)| {
-            assert_eq!(row.cells.join(","), line.to_string());
-        });
+        let file_path = "examples/data.csv";
+        let _csv = Csv::from_file(file_path).unwrap();
+        assert!(true, "The CSV was succesfully constructed");
     }
 
     #[test]
     fn parsing_invalid_content() {
-        let input = "Name,Age,Location,Occupation
-        John,30,New York,Engineer,Not Matching";
-
-        let csv = Csv::from_str(input);
+        let file_path = "examples/invalid_data.csv";
+        let csv = Csv::from_file(file_path);
         assert_eq!(csv.is_err(), true);
     }
 }

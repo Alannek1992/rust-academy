@@ -9,11 +9,10 @@ mod stdio_processor;
 mod transmute;
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let is_multithreaded = args.len() < 2;
-    let stdio_processor = StdioProcessor::new(is_multithreaded, |kind, input| {
+    let mut stdio_processor = StdioProcessor::new(args, |kind, input| {
         let transmutation = Transmutation::from_str(kind).ok_or(CustomError::new(&format!(
             "The unsupported transmutation provided: {}.\nFollowing are supported: {}",
-            String::from(&args[1]),
+            String::from(kind),
             stringify_possible_transmutations()
         )))?;
         transmutation.transmute(input)

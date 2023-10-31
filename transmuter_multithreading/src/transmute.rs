@@ -40,7 +40,7 @@ macro_rules! transmutation_enum {
                     Self::Slugify => slug::slugify(input),
                     Self::Camelcase => to_camel_case(input),
                     Self::ReverseTalk => reverse_talk(input),
-                    Self::Csv => Csv::from_str(input)?.to_string(),
+                    Self::Csv => Csv::from_file(input)?.to_string(),
                 };
 
                 Ok(result)
