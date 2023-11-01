@@ -97,10 +97,14 @@ where
             })
         };
 
-        input_thread.join().unwrap_or_else(|_| process::exit(1));
-        processing_thread
-            .join()
-            .unwrap_or_else(|_| process::exit(1));
+        if let Err(_) = input_thread.join() {
+            Self::print_error("Input reading thread failed");
+            process::exit(1);
+        }
+        if let Err(_) = processing_thread.join() {
+            Self::print_error("Input processing thread failed");
+            process::exit(1);
+        }
     }
 
     fn one_shot_mode(&mut self) {
