@@ -97,11 +97,14 @@ where
             })
         };
 
-        if let Err(_) = input_thread.join() {
+        let input_thread_result = input_thread.join();
+        let processing_thread_result = processing_thread.join();
+
+        if let Err(_) = input_thread_result {
             Self::print_error("Input reading thread failed");
             process::exit(1);
         }
-        if let Err(_) = processing_thread.join() {
+        if let Err(_) = processing_thread_result {
             Self::print_error("Input processing thread failed");
             process::exit(1);
         }
