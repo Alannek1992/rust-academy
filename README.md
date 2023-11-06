@@ -13,6 +13,7 @@ Welcome to my personal Rust Academy Homework Repository! This repository is dedi
 2. [Transmuter](transmuter/homework.md)
 3. [Transmuter - Enhanced version](transmuter_upgrade/homework.md)
 4. [Transmuter - Multithreading](transmuter_multithreading/homework.md)
+5. [Messaging System](messaging-system/homework.md)
 
 ## License
 This repository is licensed under the MIT License. You are encouraged to use, modify, and distribute my homework solutions and content for educational purposes as specified in the license.
