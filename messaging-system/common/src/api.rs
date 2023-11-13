@@ -1,9 +1,56 @@
-use std::{error::Error as StdError, str::FromStr};
+use std::{error::Error as StdError, io::Read, net::TcpStream, str::FromStr};
 
 use crate::{error::Error, util};
 
 use super::error::Result;
 use serde::{Deserialize, Serialize};
+
+const HEADER_SIZE: usize = 4;
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct MessageEnvelope {
+    pub from_user: Username,
+    pub content: Message,
+}
+
+impl MessageEnvelope {
+    pub fn new(from_user: Username, content: Message) -> Self {
+        Self { from_user, content }
+    }
+
+    pub fn deserialize(bytes: &[u8]) -> Result<Self> {
+        match bincode::deserialize(bytes) {
+            Ok(msg) => Ok(msg),
+            Err(e) => Err(Error::new(&format!("The deserialization failed: {}", e))),
+        }
+    }
+
+    pub fn read_frame(stream: &mut TcpStream) -> Result<Vec<u8>> {
+        let mut header_bytes = [0; HEADER_SIZE];
+        stream.read_exact(&mut header_bytes)?;
+
+        let size = u32::from_le_bytes(header_bytes);
+        let mut buffer = vec![0; size as usize];
+        stream.read_exact(&mut buffer)?;
+
+        Ok(buffer)
+    }
+
+    pub fn serialize(&self) -> Result<Vec<u8>> {
+        match bincode::serialize(self) {
+            Ok(content_bytes) => {
+                let mut result = vec![0; HEADER_SIZE];
+                let size = content_bytes.len() as u32;
+                result.copy_from_slice(&size.to_le_bytes());
+                result.extend(content_bytes);
+                Ok(result)
+            }
+            Err(e) => Err(Error::new(&format!("The serialization failed: {}", e))),
+        }
+    }
+}
+
+pub type Username = String;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Message {
