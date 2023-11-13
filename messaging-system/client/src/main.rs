@@ -1,12 +1,13 @@
-use std::{env, io::Write, net::TcpStream, process};
+use std::{env, net::TcpStream, process};
 
 use common::{
-    api::{Message, MessageEnvelope, Username},
     config::ServerConfig,
     error::Error,
     util::{self, ColorFacade},
 };
+use stdio_processor::StdioProcessor;
 
+mod stdio_processor;
 fn main() {
     let args: Vec<String> = env::args().collect();
     let server_config = ServerConfig::from_args(&args).unwrap_or_else(|e| {
@@ -15,7 +16,7 @@ fn main() {
         default_config
     });
 
-    let mut stream = TcpStream::connect(server_config.to_string()).unwrap_or_else(|e| {
+    let stream = TcpStream::connect(server_config.to_string()).unwrap_or_else(|e| {
         util::print_error_to_stdout(Error::new(&format!(
             "Cannot connect to the server: {}. Details: {}",
             server_config.to_string(),
@@ -29,9 +30,6 @@ fn main() {
         ColorFacade::Yellow,
     );
 
-    let username = Username::from("Alannek");
-    let msg = Message::OtherText("Ahoj, jak se mas".to_string());
-    let envelope = MessageEnvelope::new(username, msg);
-
-    stream.write_all(&envelope.serialize().unwrap()).unwrap();
+    let mut stdio_processor = StdioProcessor::new(stream);
+    stdio_processor.run();
 }
