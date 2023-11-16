@@ -1,4 +1,8 @@
-use std::{error::Error as StdError, io::Read, net::TcpStream, str::FromStr};
+use std::{
+    error::Error as StdError,
+    io::{Read, Write},
+    str::FromStr,
+};
 
 use crate::{error::Error, util};
 
@@ -14,8 +18,11 @@ pub struct MessageEnvelope {
 }
 
 impl MessageEnvelope {
-    pub fn new(from_user: Username, content: Message) -> Self {
-        Self { from_user, content }
+    pub fn new(from_user: &str, content: Message) -> Self {
+        Self {
+            from_user: Username::from(from_user),
+            content,
+        }
     }
 
     pub fn deserialize(bytes: &[u8]) -> Result<Self> {
@@ -25,7 +32,7 @@ impl MessageEnvelope {
         }
     }
 
-    pub fn read_frame(stream: &mut TcpStream) -> Result<Vec<u8>> {
+    pub fn read_frame<S: Read + Write>(stream: &mut S) -> Result<Vec<u8>> {
         let mut header_bytes = [0; HEADER_SIZE];
         stream.read_exact(&mut header_bytes)?;
 
@@ -57,6 +64,7 @@ pub enum Message {
     File(Vec<u8>),
     Image(Vec<u8>),
     OtherText(String),
+    Login,
     Exit,
 }
 

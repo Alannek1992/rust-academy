@@ -1,9 +1,9 @@
-use std::fmt::{Display, Formatter};
-
-use crate::{
-    error::{Error, Result},
-    util,
+use std::{
+    fmt::{Display, Formatter},
+    net::SocketAddr,
 };
+
+use crate::error::{Error, Result};
 
 pub struct ServerConfig {
     hostname: String,
@@ -22,16 +22,12 @@ impl ServerConfig {
         if args.len() != 3 {
             return Err(Error::new("The server configuration not provided!"));
         }
-
-        if !util::is_valid_hostname(&args[1]) {
-            return Err(Error::new("The invalid hostname provided!"));
-        }
-
-        if !util::is_port_valid(&args[2]) {
-            return Err(Error::new("The invalid port provided!"));
-        }
-
         Ok(Self::new(&args[1], &args[2]))
+    }
+
+    pub fn to_socket_address(&self) -> Result<SocketAddr> {
+        let socket_address = self.to_string().parse()?;
+        Ok(socket_address)
     }
 }
 
