@@ -1,35 +1,29 @@
-use std::{env, net::TcpStream, process};
+use std::{env, error::Error as StdError, process};
 
-use common::{
-    config::ServerConfig,
-    error::Error,
-    util::{self, ColorFacade},
-};
-use stdio_processor::StdioProcessor;
+use client::Client;
+use common::util::{self, ColorFacade};
+use config::ClientConfig;
 
-mod stdio_processor;
+mod client;
+mod config;
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let server_config = ServerConfig::from_args(&args).unwrap_or_else(|e| {
-        let default_config = ServerConfig::default();
-        util::print_error_to_stdout(e);
-        default_config
-    });
+    let client_config = ClientConfig::from_args(&args).unwrap_or_default();
+    let socket_address = client_config
+        .to_socket_address()
+        .unwrap_or_else(|e| handle_error(e));
 
-    let stream = TcpStream::connect(server_config.to_string()).unwrap_or_else(|e| {
-        util::print_error_to_stdout(Error::new(&format!(
-            "Cannot connect to the server: {}. Details: {}",
-            server_config.to_string(),
-            e.to_string()
-        )));
-        process::exit(1);
-    });
+    let mut client = Client::new(socket_address).unwrap_or_else(|e| handle_error(e));
 
     util::print_msg_to_stdout(
-        &format!("Connected to: {}", server_config.to_string()),
+        &format!("Connected to: {}", client_config),
         ColorFacade::Yellow,
     );
 
-    let mut stdio_processor = StdioProcessor::new(stream);
-    stdio_processor.run();
+    client.run().unwrap_or_else(|e| handle_error(e));
+}
+
+fn handle_error(e: Box<dyn StdError>) -> ! {
+    util::print_error_to_stdout(e);
+    process::exit(1);
 }

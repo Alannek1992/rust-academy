@@ -3,7 +3,7 @@ use std::io::Write;
 use std::net::SocketAddr;
 use std::time::Duration;
 
-use common::api::MessageEnvelope;
+use common::api::{Message, MessageEnvelope};
 use common::error::{Error, Result};
 use common::util;
 use mio::event::Event;
@@ -77,7 +77,15 @@ impl Server {
             "The TCP stream for following token: {} not found",
             token.0
         )))?;
-        let msg = MessageEnvelope::read_frame(&mut stream)?;
+
+        let msg_frame = MessageEnvelope::read_frame(&mut stream)?;
+        let msg_envelope = MessageEnvelope::deserialize(&msg_frame)?;
+
+        if msg_envelope.content == Message::Exit {
+            self.clients.remove(&token).unwrap();
+        }
+
+        let msg = msg_envelope.serialize()?;
 
         // writing to all clients except the sender
         self.clients

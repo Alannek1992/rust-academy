@@ -59,7 +59,7 @@ impl MessageEnvelope {
 
 pub type Username = String;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub enum Message {
     File(Vec<u8>),
     Image(Vec<u8>),
