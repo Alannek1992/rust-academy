@@ -81,15 +81,7 @@ impl Server {
             token.0
         )))?;
 
-        println!("Reading from stream");
-        let msg_frame = match MessageEnvelope::read_frame(&mut stream) {
-            Ok(f) => f,
-            Err(e) => {
-                println!("Error: {}", e);
-                return Err(Error::new("Fuck you"));
-            }
-        };
-        println!("After Reading from stream");
+        let msg_frame = MessageEnvelope::read_frame(&mut stream)?;
         let msg_envelope = MessageEnvelope::deserialize(&msg_frame)?;
 
         if msg_envelope.content == Message::Exit {
