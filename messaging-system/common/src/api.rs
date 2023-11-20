@@ -1,15 +1,20 @@
 use std::{
     error::Error as StdError,
-    io::{Read, Write},
+    fs::File,
+    io::{self, Read, Write},
+    path::Path,
     str::FromStr,
+    thread,
+    time::Duration,
 };
 
-use crate::{error::Error, util};
+use crate::error::Error;
 
 use super::error::Result;
 use serde::{Deserialize, Serialize};
 
 const HEADER_SIZE: usize = 4;
+const CHUNK_SIZE: usize = 4096;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MessageEnvelope {
@@ -37,8 +42,30 @@ impl MessageEnvelope {
         stream.read_exact(&mut header_bytes)?;
 
         let size = u32::from_le_bytes(header_bytes);
-        let mut buffer = vec![0; size as usize];
-        stream.read_exact(&mut buffer)?;
+        let mut buffer = Vec::with_capacity(size as usize);
+
+        let mut remaining_bytes = size as usize;
+        let mut chunk = vec![0; CHUNK_SIZE];
+
+        while remaining_bytes > 0 {
+            let bytes_to_read = std::cmp::min(remaining_bytes, CHUNK_SIZE);
+
+            match stream.read(&mut chunk[0..bytes_to_read]) {
+                Ok(n) if n > 0 => {
+                    buffer.extend_from_slice(&chunk[0..n]);
+                    remaining_bytes -= n;
+                }
+                Ok(_) => {
+                    // Stream is closed or no more data is expected
+                    break;
+                }
+                Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
+                    // Handle non-blocking scenario, wait and retry
+                    thread::sleep(Duration::from_millis(100));
+                }
+                Err(e) => return Err(Error::new(&format!("{}", e))),
+            }
+        }
 
         Ok(buffer)
     }
@@ -61,8 +88,8 @@ pub type Username = String;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub enum Message {
-    File(Vec<u8>),
-    Image(Vec<u8>),
+    File(FileData),
+    Image(FileData),
     OtherText(String),
     Login,
     Exit,
@@ -77,15 +104,56 @@ impl FromStr for Message {
             let (kind, path) = input
                 .split_first()
                 .ok_or(Error::new("The invalid path provided"))?;
-            let binary = util::read_from_file_path(&path.join(" "))?;
+            let file_data = FileData::from_file_path(&path.join(" "))?;
             match *kind {
-                ".file" => Ok(Self::File(binary)),
-                _ => Ok(Self::Image(binary)),
+                ".file" => Ok(Self::File(file_data)),
+                _ => Ok(Self::Image(file_data)),
             }
         } else if s.starts_with(".quit") {
             Ok(Self::Exit)
         } else {
             Ok(Self::OtherText(s.to_string()))
         }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+pub struct FileData {
+    pub bytes: Vec<u8>,
+    pub file_name: String,
+    pub file_extension: Option<String>,
+    pub file_size: usize,
+}
+
+impl FileData {
+    pub fn from_file_path(file_path: &str) -> Result<Self> {
+        let file = File::open(file_path)?;
+        let file_name = match Path::new(file_path).file_name() {
+            Some(name) => name.to_string_lossy().to_string(),
+            None => String::from("Unknown"),
+        };
+
+        let file_extension = Self::get_file_extension(file_path);
+        let file_size = file.metadata()?.len() as usize;
+        let mut buffer = Vec::with_capacity(file_size);
+
+        let bytes_read = file.take(file_size as u64).read_to_end(&mut buffer)?;
+
+        if bytes_read != file_size {
+            return Err(Error::new("Failed to read the entire file"));
+        }
+
+        Ok(Self {
+            bytes: buffer,
+            file_name,
+            file_extension,
+            file_size,
+        })
+    }
+
+    fn get_file_extension(file_path: &str) -> Option<String> {
+        Path::new(file_path)
+            .extension()
+            .and_then(|ext| ext.to_str().map(String::from))
     }
 }

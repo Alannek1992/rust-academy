@@ -9,13 +9,14 @@ use std::{
     str::FromStr,
 };
 
-pub struct MessageSender<'t> {
-    stream: &'t mut TcpStream,
+pub struct MessageSender {
+    username: String,
 }
 
-impl<'t> MessageSender<'t> {
-    pub fn new(stream: &'t mut TcpStream) -> Self {
-        Self { stream }
+impl MessageSender {
+    pub fn new(tcp_stream: &mut TcpStream) -> Result<Self> {
+        let username = Self::login(tcp_stream)?;
+        Ok(Self { username })
     }
 
     fn read_username() -> Result<Username> {
@@ -34,23 +35,27 @@ impl<'t> MessageSender<'t> {
         Ok(input.trim().to_string())
     }
 
-    pub fn login(&mut self) -> Result<Username> {
+    fn login(tcp_stream: &mut TcpStream) -> Result<Username> {
         let username = Self::read_username()?;
-        self.send(&username, Message::Login)?;
+        Self::send(tcp_stream, &username, Message::Login)?;
         Ok(username)
     }
 
-    pub fn send_message(&mut self, username: &Username) -> Result<MessageEnvelope> {
-        let msg = Self::read_message()?;
-        let result = self.send(username, msg)?;
-        Ok(result)
-    }
-
-    fn send(&mut self, username: &Username, message: Message) -> Result<MessageEnvelope> {
+    fn send(
+        tcp_stream: &mut TcpStream,
+        username: &Username,
+        message: Message,
+    ) -> Result<MessageEnvelope> {
         let envelope = MessageEnvelope::new(username, message);
         let envelope_serialized = envelope.serialize()?;
-        self.stream.write_all(&envelope_serialized)?;
+        tcp_stream.write_all(&envelope_serialized)?;
 
         Ok(envelope)
+    }
+
+    pub fn send_message(&self, tcp_stream: &mut TcpStream) -> Result<MessageEnvelope> {
+        let msg = Self::read_message()?;
+        let result = Self::send(tcp_stream, &self.username, msg)?;
+        Ok(result)
     }
 }

@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 use std::io::Write;
-use std::net::SocketAddr;
 use std::time::Duration;
 
 use common::api::{Message, MessageEnvelope};
+use common::config::ServerConfig;
 use common::error::{Error, Result};
-use common::util;
+use common::util::{self, ColorFacade};
 use mio::event::Event;
 use mio::net::{TcpListener, TcpStream};
 use mio::{Events, Interest, Poll, Token};
@@ -18,8 +18,11 @@ pub struct Server {
 }
 
 impl Server {
-    pub fn new(address: SocketAddr) -> Result<Self> {
+    pub fn new(config: ServerConfig) -> Result<Self> {
+        let address = config.to_socket_address()?;
         let listener = TcpListener::bind(address)?;
+        util::print_msg_to_stdout(&format!("Listening on: {}", config), ColorFacade::Yellow);
+
         Ok(Self {
             listener,
             clients: HashMap::new(),
@@ -78,7 +81,15 @@ impl Server {
             token.0
         )))?;
 
-        let msg_frame = MessageEnvelope::read_frame(&mut stream)?;
+        println!("Reading from stream");
+        let msg_frame = match MessageEnvelope::read_frame(&mut stream) {
+            Ok(f) => f,
+            Err(e) => {
+                println!("Error: {}", e);
+                return Err(Error::new("Fuck you"));
+            }
+        };
+        println!("After Reading from stream");
         let msg_envelope = MessageEnvelope::deserialize(&msg_frame)?;
 
         if msg_envelope.content == Message::Exit {

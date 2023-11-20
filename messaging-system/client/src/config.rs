@@ -6,16 +6,26 @@ use common::error::Result;
 
 pub struct ClientConfig {
     server_config: ServerConfig,
+    pub storage_path: String,
 }
 
 impl ClientConfig {
-    pub fn new(server_config: ServerConfig) -> Self {
-        Self { server_config }
+    pub fn new(server_config: ServerConfig, storage_path: &str) -> Self {
+        Self {
+            server_config,
+            storage_path: storage_path.to_string(),
+        }
     }
 
     pub fn from_args(args: &[String]) -> Result<Self> {
         let server_config = ServerConfig::from_args(args)?;
-        Ok(Self::new(server_config))
+        let storage_path = if args.len() == 4 {
+            &args[1]
+        } else {
+            "./storage"
+        };
+
+        Ok(Self::new(server_config, storage_path))
     }
 
     pub fn to_socket_address(&self) -> Result<SocketAddr> {
@@ -25,9 +35,7 @@ impl ClientConfig {
 
 impl Default for ClientConfig {
     fn default() -> Self {
-        Self {
-            server_config: ServerConfig::default(),
-        }
+        Self::new(ServerConfig::default(), "./storage")
     }
 }
 
