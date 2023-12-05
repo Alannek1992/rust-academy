@@ -8,3 +8,6 @@ version = "0.1.0"
 [dependencies]
 common = {path = "../common"}
 mio = {version = "0.8.9", features = ["net", "os-poll"]}
+env_logger = "0.10.1"
+log = "0.4"
+

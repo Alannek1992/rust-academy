@@ -6,6 +6,7 @@ use common::api::{Message, MessageEnvelope};
 use common::config::ServerConfig;
 use common::error::{Error, Result};
 use common::util::{self, ColorFacade};
+use log::trace;
 use mio::event::Event;
 use mio::net::{TcpListener, TcpStream};
 use mio::{Events, Interest, Poll, Token};
@@ -40,6 +41,7 @@ impl Server {
 
     fn start(&mut self, poll: &mut Poll) -> Result<()> {
         let mut events = Events::with_capacity(1024);
+        trace!("Starting polling events");
 
         loop {
             poll.poll(&mut events, Some(Duration::from_millis(100)))?;
@@ -66,6 +68,7 @@ impl Server {
     fn accept_client(&mut self, poll: &mut Poll) -> Result<()> {
         let (mut stream, _) = self.listener.accept()?;
         let token = Token(self.clients.len() + 1);
+        trace!("New client connected. Registering as: {:?}", token);
         poll.registry()
             .register(&mut stream, token, Interest::READABLE)?;
         self.clients.insert(token, stream);
@@ -76,6 +79,7 @@ impl Server {
         if !event.is_readable() {
             return Err(Error::new("The event is not readable"));
         }
+
         let mut stream = self.clients.get_mut(&token).ok_or(Error::new(&format!(
             "The TCP stream for following token: {} not found",
             token.0
@@ -83,8 +87,14 @@ impl Server {
 
         let msg_frame = MessageEnvelope::read_frame(&mut stream)?;
         let msg_envelope = MessageEnvelope::deserialize(&msg_frame)?;
+        trace!(
+            "Existing client: {} sent a message: {:?}",
+            msg_envelope.from_user,
+            msg_envelope.content
+        );
 
         if msg_envelope.content == Message::Exit {
+            trace!("Client was disconnected from the server");
             self.clients.remove(&token).unwrap();
         }
 

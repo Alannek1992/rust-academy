@@ -3,6 +3,8 @@ use std::{
     net::SocketAddr,
 };
 
+use log::{trace, warn};
+
 use crate::error::{Error, Result};
 
 pub struct ServerConfig {
@@ -12,6 +14,7 @@ pub struct ServerConfig {
 
 impl ServerConfig {
     pub fn new(hostname: &str, port: &str) -> Self {
+        trace!("Creating server config with hostname: {}, port: {}", hostname, port);
         Self {
             hostname: hostname.to_string(),
             port: port.to_string(),
@@ -20,6 +23,7 @@ impl ServerConfig {
 
     pub fn from_args(args: &[String]) -> Result<Self> {
         if args.len() != 3 {
+            warn!("Not provided server configuration within arguments: {:?}", args);
             return Err(Error::new("The server configuration not provided!"));
         }
         Ok(Self::new(&args[1], &args[2]))

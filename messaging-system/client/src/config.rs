@@ -3,6 +3,9 @@ use std::net::SocketAddr;
 
 use common::config::ServerConfig;
 use common::error::Result;
+use log::trace;
+
+const DEFAULT_STORAGE_PATH: &str = "./storage";
 
 pub struct ClientConfig {
     server_config: ServerConfig,
@@ -11,6 +14,7 @@ pub struct ClientConfig {
 
 impl ClientConfig {
     pub fn new(server_config: ServerConfig, storage_path: &str) -> Self {
+        trace!("The chat content will be stored into: {}", storage_path);
         Self {
             server_config,
             storage_path: storage_path.to_string(),
@@ -22,9 +26,8 @@ impl ClientConfig {
         let storage_path = if args.len() == 4 {
             &args[1]
         } else {
-            "./storage"
+            DEFAULT_STORAGE_PATH
         };
-
         Ok(Self::new(server_config, storage_path))
     }
 
@@ -35,7 +38,7 @@ impl ClientConfig {
 
 impl Default for ClientConfig {
     fn default() -> Self {
-        Self::new(ServerConfig::default(), "./storage")
+        Self::new(ServerConfig::default(), DEFAULT_STORAGE_PATH)
     }
 }
 

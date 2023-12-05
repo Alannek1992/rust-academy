@@ -3,6 +3,7 @@ use common::{
     error::Result,
     util,
 };
+use log::trace;
 use std::{
     io::{self, Write},
     net::TcpStream,
@@ -25,6 +26,7 @@ impl MessageSender {
     }
 
     fn read_message() -> Result<Message> {
+        trace!("Reading the message as user input");
         let input = Self::read_user_input()?;
         Message::from_str(&input)
     }
@@ -46,6 +48,7 @@ impl MessageSender {
         username: &Username,
         message: Message,
     ) -> Result<MessageEnvelope> {
+        trace!("Sending the message: {:?}", message);
         let envelope = MessageEnvelope::new(username, message);
         let envelope_serialized = envelope.serialize()?;
         tcp_stream.write_all(&envelope_serialized)?;

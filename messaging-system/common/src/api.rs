@@ -1,5 +1,6 @@
 use std::{
     error::Error as StdError,
+    fmt::Display,
     fs::File,
     io::{self, Read, Write},
     path::Path,
@@ -11,6 +12,7 @@ use std::{
 use crate::error::Error;
 
 use super::error::Result;
+use log::{trace, warn};
 use serde::{Deserialize, Serialize};
 
 const HEADER_SIZE: usize = 4;
@@ -24,10 +26,13 @@ pub struct MessageEnvelope {
 
 impl MessageEnvelope {
     pub fn new(from_user: &str, content: Message) -> Self {
-        Self {
+        let msg_env = Self {
             from_user: Username::from(from_user),
             content,
-        }
+        };
+
+        trace!("Creating new message envelope: {}", msg_env);
+        msg_env
     }
 
     pub fn deserialize(bytes: &[u8]) -> Result<Self> {
@@ -61,6 +66,7 @@ impl MessageEnvelope {
                 }
                 Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
                     // Handle non-blocking scenario, wait and retry
+                    warn!("Handling blocking operation. The tread will be put to sleep for 100ms");
                     thread::sleep(Duration::from_millis(100));
                 }
                 Err(e) => return Err(Error::new(&format!("{}", e))),
@@ -84,6 +90,16 @@ impl MessageEnvelope {
     }
 }
 
+impl Display for MessageEnvelope {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "From user: {}. Content: {:?}",
+            self.from_user, self.content
+        )
+    }
+}
+
 pub type Username = String;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -99,6 +115,7 @@ impl FromStr for Message {
     type Err = Box<dyn StdError>;
 
     fn from_str(s: &str) -> Result<Self> {
+        trace!("Constructing message from provided input: {}", s);
         if s.starts_with(".file") || s.starts_with(".image") {
             let input: Vec<&str> = s.split_whitespace().collect();
             let (kind, path) = input
@@ -127,6 +144,7 @@ pub struct FileData {
 
 impl FileData {
     pub fn from_file_path(file_path: &str) -> Result<Self> {
+        trace!("Creating file data from provided file path: {}", file_path);
         let file = File::open(file_path)?;
         let file_name = match Path::new(file_path).file_name() {
             Some(name) => name.to_string_lossy().to_string(),

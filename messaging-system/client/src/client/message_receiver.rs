@@ -3,6 +3,7 @@ use common::{
     error::Result,
     util,
 };
+use log::trace;
 use std::net::TcpStream;
 
 pub struct MessageReceiver {
@@ -17,6 +18,7 @@ impl MessageReceiver {
     }
 
     pub fn read_and_process_msg(&self, tcp_stream: &mut TcpStream) -> Result<()> {
+        trace!("Reading from the TCP Stream and processing the message");
         let msg = MessageEnvelope::read_frame(tcp_stream)?;
         let msg = MessageEnvelope::deserialize(&msg)?;
         self.process_message(&msg)?;
@@ -25,6 +27,11 @@ impl MessageReceiver {
     }
 
     fn process_message(&self, msg_envelope: &MessageEnvelope) -> Result<()> {
+        trace!(
+            "Processing the received message: {:?} from user: {}",
+            msg_envelope.content,
+            msg_envelope.from_user
+        );
         match &msg_envelope.content {
             Message::File(file_content) | Message::Image(file_content) => {
                 let file_path = format!(
@@ -40,6 +47,11 @@ impl MessageReceiver {
     }
 
     fn interpret_message_to_stdout(&self, msg_envelope: &MessageEnvelope) {
+        trace!(
+            "Interpreting the received message: {:?} from user: {} to stdout",
+            msg_envelope.content,
+            msg_envelope.from_user
+        );
         // TODO - refine
         let result = match &msg_envelope.content {
             Message::File(file_data) => format!(

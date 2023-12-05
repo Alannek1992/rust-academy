@@ -1,5 +1,6 @@
 use crate::{api::FileData, error::Result};
 use colored::{Color, Colorize};
+use log::trace;
 use std::{
     error::Error,
     fs::{self, File},
@@ -24,6 +25,7 @@ impl ColorFacade {
 }
 
 pub fn write_to_file(output_directory: &str, file_data: &FileData) -> Result<()> {
+    trace!("Creating a file: {} in : {}", file_data.file_name, output_directory);
     let mut file_path = Path::new(output_directory).join(&file_data.file_name);
 
     if let Some(extension) = &file_data.file_extension {

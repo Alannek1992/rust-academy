@@ -1,6 +1,7 @@
 use common::api::Message;
 use common::error::{Error, Result};
 use common::util::{self, ColorFacade};
+use log::trace;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::{net::TcpStream, thread};
@@ -21,6 +22,7 @@ pub struct Client {
 
 impl Client {
     pub fn new(config: ClientConfig) -> Result<Self> {
+        trace!("Creating a new chat client with provided config: {}", config);
         let socket_address = config.to_socket_address()?;
         let mut tcp_stream = TcpStream::connect(socket_address)?;
         let message_sender = MessageSender::new(&mut tcp_stream)?;
@@ -36,6 +38,7 @@ impl Client {
     }
 
     pub fn run(&mut self) -> Result<()> {
+        trace!("Starting the chat client");
         let mut tcp_stream = self.tcp_stream.try_clone()?;
         let msg_sender = self.message_sender.clone();
         let is_running = Arc::new(AtomicBool::new(true));
