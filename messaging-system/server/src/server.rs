@@ -2,11 +2,12 @@ use std::collections::HashMap;
 use std::io::Write;
 use std::time::Duration;
 
+use anyhow::{anyhow, Result};
 use common::api::{Message, MessageEnvelope};
 use common::config::ServerConfig;
-use common::error::{Error, Result};
+use common::error::MsgSystemError;
 use common::util::{self, ColorFacade};
-use log::trace;
+use log::{error, trace};
 use mio::event::Event;
 use mio::net::{TcpListener, TcpStream};
 use mio::{Events, Interest, Poll, Token};
@@ -59,7 +60,7 @@ impl Server {
                 };
 
                 if let Err(e) = result {
-                    util::print_error_to_stdout(e);
+                    error!("Error occured when polling event: {}", e);
                 }
             }
         }
@@ -77,13 +78,16 @@ impl Server {
 
     fn handle_client_event(&mut self, token: Token, event: &Event) -> Result<()> {
         if !event.is_readable() {
-            return Err(Error::new("The event is not readable"));
+            return Err(anyhow!("The event is not readable"));
         }
 
-        let mut stream = self.clients.get_mut(&token).ok_or(Error::new(&format!(
+        let mut stream = self.clients.get_mut(&token).ok_or(anyhow!(
             "The TCP stream for following token: {} not found",
             token.0
-        )))?;
+        ))?;
+
+        // at this point the TCP stream between client and server is established
+
 
         let msg_frame = MessageEnvelope::read_frame(&mut stream)?;
         let msg_envelope = MessageEnvelope::deserialize(&msg_frame)?;
@@ -114,5 +118,8 @@ impl Server {
             });
 
         Ok(())
+    }
+    fn send_error_response(stream: &TcpStream, error: MsgSystemError) {
+        let msg_env = MessageEnvelope::new(None, Some(error));
     }
 }

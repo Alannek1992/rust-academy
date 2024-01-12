@@ -1,27 +1,24 @@
-use std::{
-    error::Error as StdError,
-    fmt::{Display, Formatter},
-};
+use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
-pub type Result<T> = std::result::Result<T, Box<dyn StdError>>;
+pub type Result<T> = std::result::Result<T, MsgSystemError>;
 
-#[derive(Debug)]
-pub struct Error {
-    message: String,
+#[derive(Error, Debug, Serialize, Deserialize)]
+pub enum MsgSystemError {
+    #[error("Failed to deserialize the message")]
+    DeserializationFailed,
+    #[error("Cannot read from TCP stream")]
+    ReadingFromTCPStreamFailed,
+    #[error("Failed to serialize the message")]
+    SerializationFailed,
+    #[error("Failed to construct message. Invalid string provided: {provided_str:?}")]
+    CannotConstructMessage { provided_str: String },
+    #[error("Failed to construct file data from file path: {file_path:?}")]
+    CannotCreateFileData { file_path: String },
+    #[error("Server configuration not provided")]
+    ServerConfigurationNotProvided,
+    #[error("Cannot derive socket address from: {config:?}")]
+    CannotDeriveSocketAddress { config: String },
+    #[error("Failed to write a file to directory: {output_directory:?}")]
+    CannotWriteFile { output_directory: String },
 }
-
-impl Error {
-    pub fn new(message: &str) -> Box<Self> {
-        Box::new(Self {
-            message: message.to_string(),
-        })
-    }
-}
-
-impl Display for Error {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.message)
-    }
-}
-
-impl StdError for Error {}

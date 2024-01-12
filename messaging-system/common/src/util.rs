@@ -1,4 +1,7 @@
-use crate::{api::FileData, error::Result};
+use crate::{
+    api::FileData,
+    error::{MsgSystemError, Result},
+};
 use colored::{Color, Colorize};
 use log::trace;
 use std::{
@@ -25,7 +28,11 @@ impl ColorFacade {
 }
 
 pub fn write_to_file(output_directory: &str, file_data: &FileData) -> Result<()> {
-    trace!("Creating a file: {} in : {}", file_data.file_name, output_directory);
+    trace!(
+        "Creating a file: {} in : {}",
+        file_data.file_name,
+        output_directory
+    );
     let mut file_path = Path::new(output_directory).join(&file_data.file_name);
 
     if let Some(extension) = &file_data.file_extension {
@@ -34,17 +41,24 @@ pub fn write_to_file(output_directory: &str, file_data: &FileData) -> Result<()>
 
     // Create the directory structure if it doesn't exist
     if let Some(parent) = file_path.parent() {
-        fs::create_dir_all(parent)?;
+        fs::create_dir_all(parent).map_err(|_| MsgSystemError::CannotWriteFile {
+            output_directory: output_directory.to_string(),
+        })?;
     }
 
-    let mut file = File::create(file_path)?;
+    let mut file = File::create(file_path).map_err(|_| MsgSystemError::CannotWriteFile {
+        output_directory: output_directory.to_string(),
+    })?;
 
-    file.write_all(&file_data.bytes)?;
+    file.write_all(&file_data.bytes)
+        .map_err(|_| MsgSystemError::CannotWriteFile {
+            output_directory: output_directory.to_string(),
+        })?;
 
     Ok(())
 }
 
-pub fn print_error_to_stdout(err: Box<dyn Error>) {
+pub fn print_error_to_stdout(err: impl Error) {
     eprintln!("{}", err.to_string().red())
 }
 
@@ -52,7 +66,7 @@ pub fn print_msg_to_stdout(msg: &str, color: ColorFacade) {
     println!("{}", msg.color(color.convert()))
 }
 
-pub fn default_error_handler(e: Box<dyn Error>) -> ! {
+pub fn default_error_handler(e: impl Error) -> ! {
     print_error_to_stdout(e);
     process::exit(1);
 }

@@ -3,9 +3,8 @@ use std::{
     net::SocketAddr,
 };
 
+use anyhow::{anyhow, Result};
 use log::{trace, warn};
-
-use crate::error::{MsgSystemError, Result};
 
 pub struct ServerConfig {
     hostname: String,
@@ -31,16 +30,13 @@ impl ServerConfig {
                 "Not provided server configuration within arguments: {:?}",
                 args
             );
-            return Err(MsgSystemError::ServerConfigurationNotProvided);
+            return Err(anyhow!("The server configuration not provided!"));
         }
         Ok(Self::new(&args[1], &args[2]))
     }
 
     pub fn to_socket_address(&self) -> Result<SocketAddr> {
-        let config = self.to_string();
-        let socket_address = config
-            .parse()
-            .map_err(|_| MsgSystemError::CannotDeriveSocketAddress { config })?;
+        let socket_address = self.to_string().parse()?;
         Ok(socket_address)
     }
 }
