@@ -1,14 +1,14 @@
-use tokio::net::TcpStream;
+use common::connection::Connection;
 
-pub struct AuthTcpStream {
-    stream: TcpStream,
+pub struct AuthConnection {
+    connection: Connection,
     is_authenticated: bool,
 }
 
-impl AuthTcpStream {
-    pub fn new(stream: TcpStream) -> Self {
+impl AuthConnection {
+    pub fn new(connection: Connection) -> Self {
         Self {
-            stream,
+            connection,
             is_authenticated: false,
         }
     }
