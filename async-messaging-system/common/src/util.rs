@@ -1,4 +1,4 @@
-use std::{fmt::Display, io::{Read, Write}};
+use std::fmt::Display;
 
 use colored::{Color, Colorize};
 

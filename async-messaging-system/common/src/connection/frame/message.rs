@@ -6,7 +6,8 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use tokio::{fs::File, io::AsyncReadExt};
 
-enum Message {
+#[derive(Debug, Serialize, Deserialize)]
+pub enum Message {
     File(FileData),
     Image(FileData),
     Text(String),

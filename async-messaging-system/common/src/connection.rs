@@ -1,16 +1,15 @@
-use std::io::Cursor;
-
+use crate::error::Result;
 use anyhow::anyhow;
-use bytes::BytesMut;
+use bytes::{Buf, BytesMut};
+use log::trace;
 use tokio::{
-    io::{AsyncReadExt, BufWriter},
+    io::{AsyncReadExt, AsyncWriteExt, BufWriter},
     net::TcpStream,
 };
 
-use self::{frame::Frame, error::Result};
+use self::frame::{Frame, FrameDeserializationError};
 
-mod frame;
-mod error;
+pub mod frame;
 
 pub struct Connection {
     stream: BufWriter<TcpStream>,
@@ -52,8 +51,29 @@ impl Connection {
         }
     }
 
-    fn parse_frame(&mut self) -> Result<Option<Frame>> {
-        let mut buf = Cursor::new(&self.buffer[..]);
+    pub async fn write_frame(&mut self, frame: &Frame) -> Result<()> {
+        trace!("Writing a frame into TCP stream");
+        let serialized_frame = frame.serialize()?;
+        self.stream.write_all(&serialized_frame).await?;
+        self.stream.flush().await?;
+        Ok(())
+    }
 
+    fn parse_frame(&mut self) -> std::result::Result<Option<Frame>, FrameDeserializationError> {
+        trace!("Parsing a frame from the TCP stream");
+        let mut cloned_buf = self.buffer.clone();
+
+        match Frame::deserialize(&mut cloned_buf) {
+            Ok(frame) => {
+                // Update the buffer to remove the consumed bytes
+                let consumed = self.buffer.len() - cloned_buf.remaining();
+                self.buffer.advance(consumed);
+                Ok(Some(frame))
+            }
+            Err(err) => match err {
+                FrameDeserializationError::Incomplete => Ok(None),
+                _ => Err(err),
+            },
+        }
     }
 }

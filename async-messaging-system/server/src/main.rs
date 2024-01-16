@@ -16,4 +16,9 @@ async fn main() {
         util::print_msg_to_stderr(e);
         process::exit(1)
     });
+
+    server.run().await.unwrap_or_else(|e| {
+        util::print_msg_to_stderr(e);
+        process::exit(1)
+    });
 }
