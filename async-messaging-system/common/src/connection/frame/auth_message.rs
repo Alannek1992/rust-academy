@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use argon2rs::argon2d_simple;
 use serde::{Deserialize, Serialize};
 

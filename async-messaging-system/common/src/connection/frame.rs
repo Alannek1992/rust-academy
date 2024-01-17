@@ -1,8 +1,7 @@
-use anyhow::anyhow;
+use anyhow::{anyhow, Result};
 use bincode::{deserialize, serialize, ErrorKind};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
-use crate::error::Result;
 
 use self::{auth_message::AuthMessage, message::Message};
 
@@ -46,7 +45,7 @@ impl Frame {
     pub fn serialize(&self) -> Result<Vec<u8>> {
         match serialize(self) {
             Ok(bytes) => Ok(bytes),
-            Err(e) => Err(e),
+            Err(e) => Err(anyhow!(e)),
         }
     }
 }
