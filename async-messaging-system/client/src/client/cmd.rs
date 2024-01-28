@@ -1,25 +1,19 @@
 use anyhow::Result;
-use common::{connection::frame::auth_message::Username, util};
-use dialoguer::{MultiSelect, Select};
-use tokio::io::{self, AsyncBufReadExt, AsyncReadExt, BufReader};
+use common::{connection::frame::auth::Username, util};
+use dialoguer::Select;
+use tokio::io::{self, AsyncBufReadExt, BufReader};
+
+pub struct Cmd;
 
 pub struct AuthInput {
-    username: String,
-    password: String,
-    existing_account: bool,
+    pub username: String,
+    pub password: String,
+    pub existing_account: bool,
 }
 
-pub struct CmdUtil;
-
-impl CmdUtil {
-    pub async fn read_user_input<T: Into<String>>() -> Result<String> {
-        let stdin = io::stdin();
-        let mut reader = BufReader::new(stdin);
-
-        // Read one line from stdin
-        let mut input = String::new();
-        reader.read_line(&mut input).await?;
-        Ok(input)
+impl Cmd {
+    pub fn new() -> Self {
+        Self
     }
 
     pub async fn read_auth_details() -> Result<AuthInput> {
@@ -43,5 +37,19 @@ impl CmdUtil {
             password,
             existing_account,
         })
+    }
+
+    pub async fn read_user_message() -> Result<String> {
+        Self::read_user_input::<String>().await
+    }
+
+    async fn read_user_input<T: Into<String>>() -> Result<String> {
+        let stdin = io::stdin();
+        let mut reader = BufReader::new(stdin);
+
+        // Read one line from stdin
+        let mut input = String::new();
+        reader.read_line(&mut input).await?;
+        Ok(input)
     }
 }

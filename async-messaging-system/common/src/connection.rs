@@ -1,5 +1,4 @@
-
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 use bytes::{Buf, BytesMut};
 use log::trace;
 use tokio::{

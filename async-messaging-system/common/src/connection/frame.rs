@@ -3,15 +3,37 @@ use bincode::{deserialize, serialize, ErrorKind};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use self::{auth_message::AuthMessage, message::Message};
+use self::{auth::{Auth, AuthToken}, message::Message};
 
-pub mod auth_message;
+pub mod auth;
 pub mod message;
 
 #[derive(Debug, Serialize, Deserialize)]
-pub enum Frame {
+pub struct Header {
+    jwt_token: Option<AuthToken>,
+}
+
+impl Header {
+    pub fn new() -> Self {
+        Self { jwt_token: None }
+    }
+    pub fn with_token(jwt_token: AuthToken) -> Self {
+        Self {
+            jwt_token: Some(jwt_token),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum Payload {
     Msg(Message),
-    Auth(AuthMessage),
+    Auth(Auth),
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Frame {
+    pub header: Header,
+    pub payload: Payload,
 }
 
 #[derive(Error, Debug)]
@@ -26,6 +48,9 @@ pub enum FrameDeserializationError {
 }
 
 impl Frame {
+    pub fn new(header: Header, payload: Payload) -> Self {
+        Self { header, payload }
+    }
     // deserializes into frame from the provided bytes
     pub fn deserialize(buf: &mut [u8]) -> std::result::Result<Self, FrameDeserializationError> {
         match deserialize(buf) {
